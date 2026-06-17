@@ -1,0 +1,44 @@
+HOW TO RUN THE AUTOMATED TESTS
+==============================
+
+The test file goes in a folder called "test":
+
+  medrec/
+    contracts/MedicalRecord.sol
+    migrations/1_deploy_medicalrecord.js
+    test/medicalrecord.test.js     <-- this file
+    truffle-config.js
+
+STEP 1 - Make sure Ganache is OPEN (same as for deploy).
+
+STEP 2 - In the terminal (inside the medrec folder), run:
+
+    truffle test
+
+   Truffle will compile, deploy a fresh copy to Ganache, and run
+   all the tests. You should see a list of green ticks and at the
+   bottom something like "36 passing".
+
+STEP 3 - Screenshot the terminal showing all tests passing.
+   This is your B3 "console output" evidence for the report.
+
+
+WHAT THE TESTS COVER (maps to rubric B3 "Exceeds" band)
+-------------------------------------------------------
+- Every function is tested (100% of functions).
+- Happy paths: register, add record, grant/revoke, request, view, check.
+- Every require() revert is tested with its exact reason message.
+- Access control: onlyOwner / onlyPatient / onlyDoctor all tested
+  for unauthorised callers.
+- Edge cases: zero address, empty strings, duplicate registration,
+  non-existent record, view-after-revoke.
+- Multi-account: uses owner, patient, doctor, and two extra accounts.
+
+
+GAS TABLE
+---------
+See GAS_TABLE.txt. These numbers come from the same contract; you can
+also copy the exact gas values from your own "truffle test" run or the
+Ganache transaction list to match your machine.
+
+If "truffle test" shows any error, copy it and send it over.

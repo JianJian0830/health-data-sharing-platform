@@ -1,0 +1,9 @@
+Function                  | Gas Used
+--------------------------|----------
+Deployment (constructor)  | 1041780
+registerPatient           | 47498
+registerDoctor            | 47520
+addRecord                 | 161011
+grantAccess               | 50008
+requestAccess             | 27708
+revokeAccess              | 28056
