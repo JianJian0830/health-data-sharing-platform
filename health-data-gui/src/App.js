@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from './config/contract';
 
@@ -10,6 +10,36 @@ function App() {
   const [treatment, setTreatment] = useState('');
   const [searchId, setSearchId] = useState('');
   const [viewedRecord, setViewedRecord] = useState(null);
+
+  // Active Role Tab tracking: 'admin', 'patient', or 'doctor'
+  const [activeRole, setActiveRole] = useState('patient');
+
+  const [adminPatientInput, setAdminPatientInput] = useState('');
+  const [adminDoctorInput, setAdminDoctorInput] = useState('');
+  const [grantDoctorInput, setGrantDoctorInput] = useState('');
+
+  // Automatically check owner address when wallet connects
+  useEffect(() => {
+    if (account) {
+      checkContractOwner();
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [account]);
+
+  const checkContractOwner = async () => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+      const ownerAddress = await contract.owner();
+      
+      // Auto-switch to admin panel if the connected wallet is the owner account
+      if (account.toLowerCase() === ownerAddress.toLowerCase()) {
+        setActiveRole('admin');
+      }
+    } catch (err) {
+      console.error("Could not fetch owner", err);
+    }
+  };
 
   const connectWallet = async () => {
     if (window.ethereum) {
@@ -28,87 +58,104 @@ function App() {
     }
   };
 
-  const handleRegisterPatient = async () => {
-    if (!account) return setErrorMessage('Please connect your wallet first.');
+  const handleAdminRegisterPatient = async (e) => {
+    e.preventDefault();
+    if (!account) return setErrorMessage('Please connect wallet.');
     try {
-      setTxStatus('Pending Confirmation');
+      setTxStatus('Admin Registering Patient...');
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-      const tx = await contract.registerPatient(account);
-      setTxStatus('Processing Registration...');
+      const tx = await contract.registerPatient(adminPatientInput);
       await tx.wait();
-      setTxStatus('Registration Success! 🎉');
-      setErrorMessage('');
+      setTxStatus('Patient Registered Successfully! 🎉');
+      setAdminPatientInput('');
     } catch (err) {
       console.error(err);
-      setErrorMessage('Registration failed or you are already registered.');
-      setTxStatus('Failed ❌');
+      setErrorMessage('Admin registration failed.');
+    }
+  };
+
+  const handleAdminRegisterDoctor = async (e) => {
+    e.preventDefault();
+    if (!account) return setErrorMessage('Please connect wallet.');
+    try {
+      setTxStatus('Admin Registering Doctor...');
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const tx = await contract.registerDoctor(adminDoctorInput);
+      await tx.wait();
+      setTxStatus('Doctor Registered Successfully! 🎉');
+      setAdminDoctorInput('');
+    } catch (err) {
+      console.error(err);
+      setErrorMessage('Admin registration failed.');
     }
   };
 
   const handleAddRecord = async (e) => {
     e.preventDefault();
-    if (!account) return setErrorMessage('Please connect your wallet first.');
-    
+    if (!account) return setErrorMessage('Please connect wallet.');
     try {
-      setTxStatus('Pending Confirmation');
-
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x539' }], 
-        });
-      } catch (switchError) {
-        console.error("Could not auto-switch network", switchError);
-      }
-
+      setTxStatus('Submitting Record...');
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
       const tx = await contract.addRecord(diagnosis, treatment, { gasLimit: 300000 });
-      setTxStatus('Uploading to Blockchain...');
-      
       await tx.wait();
-      setTxStatus('Success 🎉');
+      setTxStatus('Record Added Successfully! 🎉');
       setDiagnosis('');
       setTreatment('');
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.reason || 'Transaction reverted or cancelled.');
-      setTxStatus('Failed ❌');
+      setErrorMessage('Failed to add record.');
+    }
+  };
+
+  const handleGrantAccess = async (e) => {
+    e.preventDefault();
+    if (!account) return setErrorMessage('Please connect wallet.');
+    try {
+      setTxStatus('Granting Access to Doctor...');
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const tx = await contract.grantAccess(grantDoctorInput);
+      await tx.wait();
+      setTxStatus('Access Granted Successfully! 🎉');
+      setGrantDoctorInput('');
+    } catch (err) {
+      console.error(err);
+      setErrorMessage('Failed to grant access.');
     }
   };
 
   const handleViewRecord = async (e) => {
     e.preventDefault();
-    if (!account) return setErrorMessage('Please connect your wallet first.');
-
+    if (!account) return setErrorMessage('Please connect wallet.');
     try {
+      setTxStatus('Fetching Record...');
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
       const record = await contract.viewRecord(searchId);
       const recordArray = Array.from(record);
-
       setViewedRecord({
         id: recordArray[0].toString(),
         diagnosis: recordArray[1],
         treatment: recordArray[2],
         patient: recordArray[3]
       });
+      setTxStatus('Record Fetched Successfully! 🎉');
       setErrorMessage('');
     } catch (err) {
       console.error(err);
-      setErrorMessage('Record ID does not exist or access denied.');
+      setErrorMessage('Access Denied or Record ID does not exist.');
       setViewedRecord(null);
     }
   };
 
-  // Fixed Styling Properties
   const theme = {
     background: '#f4f7f6',
     primary: '#10b981', 
@@ -120,124 +167,116 @@ function App() {
     errorBg: '#fef2f2',
     errorText: '#ef4444',
   };
-
   return (
     <div style={{ backgroundColor: theme.background, minHeight: '100vh', padding: '40px 20px', fontFamily: 'sans-serif', color: theme.textMain, boxSizing: 'border-box' }}>
       <div style={{ maxWidth: '700px', margin: '0 auto' }}>
         
         {/* Header Title */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: theme.secondary, margin: '0 0 8px 0' }}>🏥 MedRec Link</h1>
           <p style={{ color: theme.textMuted, margin: 0, fontSize: '1.1rem' }}>Decentralized Health Data Sharing Platform</p>
         </div>
 
-        {/* 1. System Status Panel */}
-        <div style={{ backgroundColor: theme.cardBg, borderRadius: '12px', padding: '24px', marginBottom: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>Network Identity</h3>
-            <button 
-              onClick={connectWallet} 
-              style={{ padding: '10px 20px', backgroundColor: account ? theme.primary : theme.secondary, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
-            >
+        {/* System Identity Panel */}
+        <div style={{ backgroundColor: theme.cardBg, borderRadius: '12px', padding: '20px', marginBottom: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <p style={{ margin: '2px 0', fontSize: '0.9rem' }}><strong>Wallet:</strong> <span style={{ fontFamily: 'monospace', background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px' }}>{account || 'Not Connected'}</span></p>
+              <p style={{ margin: '2px 0', fontSize: '0.9rem' }}><strong>Status:</strong> <span style={{ color: theme.secondary, fontWeight: '700' }}>{txStatus}</span></p>
+            </div>
+            <button onClick={connectWallet} style={{ padding: '10px 20px', backgroundColor: account ? theme.primary : theme.secondary, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>
               {account ? 'Connected 🔒' : 'Connect Wallet'}
             </button>
           </div>
-          
-          <div style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
-            <p style={{ margin: '4px 0' }}><strong>Wallet Address:</strong> <span style={{ fontFamily: 'monospace', background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px', wordBreak: 'break-all' }}>{account || 'Not Connected'}</span></p>
-            <p style={{ margin: '4px 0' }}><strong>System Tracker:</strong> <span style={{ color: txStatus.includes('Success') ? theme.primary : theme.secondary, fontWeight: '700' }}>{txStatus}</span></p>
-          </div>
-
           {errorMessage && (
-            <div style={{ marginTop: '16px', backgroundColor: theme.errorBg, color: theme.errorText, padding: '12px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '500', border: `1px solid ${theme.errorText}` }}>
+            <div style={{ marginTop: '12px', backgroundColor: theme.errorBg, color: theme.errorText, padding: '10px', borderRadius: '8px', fontSize: '0.85rem' }}>
               ⚠️ {errorMessage}
             </div>
           )}
         </div>
 
-        {/* 2. Patient Registration Stage */}
-        <div style={{ backgroundColor: '#eff6ff', borderRadius: '12px', padding: '24px', marginBottom: '24px', border: '1px solid #bfdbfe' }}>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', color: '#1e40af' }}>Step 1: Patient System Initialization</h3>
-          <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#1e3a8a' }}>New addresses must log into the blockchain index directory once before processing data files.</p>
-          <button 
-            onClick={handleRegisterPatient} 
-            style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
-          >
-            Register Wallet Address
+        {/* ROLE SELECTION TABS */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+          <button onClick={() => setActiveRole('admin')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', backgroundColor: activeRole === 'admin' ? '#ea580c' : '#e5e7eb', color: activeRole === 'admin' ? '#fff' : '#4b5563' }}>
+            👑 Admin Portal
+          </button>
+          <button onClick={() => setActiveRole('patient')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', backgroundColor: activeRole === 'patient' ? '#2563eb' : '#e5e7eb', color: activeRole === 'patient' ? '#fff' : '#4b5563' }}>
+            👤 Patient Dashboard
+          </button>
+          <button onClick={() => setActiveRole('doctor')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', backgroundColor: activeRole === 'doctor' ? '#10b981' : '#e5e7eb', color: activeRole === 'doctor' ? '#fff' : '#4b5563' }}>
+            🩺 Doctor View
           </button>
         </div>
 
-        {/* 3. Add Medical Record Form */}
-        <div style={{ backgroundColor: theme.cardBg, borderRadius: '12px', padding: '24px', marginBottom: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ margin: '0 0 20px 0', fontSize: '1.2rem', fontWeight: '600', borderBottom: `2px solid ${theme.background}`, paddingBottom: '10px' }}>✍️ Create Medical Entry (Write Call)</h3>
-          <form onSubmit={handleAddRecord}>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: theme.textMuted, marginBottom: '6px' }}>Diagnosis Report</label>
-              <input 
-                type="text" 
-                placeholder="e.g., Acute Rhinitis" 
-                value={diagnosis} 
-                onChange={(e) => setDiagnosis(e.target.value)} 
-                required 
-                style={{ width: '100%', padding: '12px', boxSizing: 'border-box', border: `1px solid ${theme.border}`, borderRadius: '8px', fontSize: '1rem' }}
-              />
-            </div>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: theme.textMuted, marginBottom: '6px' }}>Prescribed Treatment Plan</label>
-              <input 
-                type="text" 
-                placeholder="e.g., Antihistamines 10mg daily" 
-                value={treatment} 
-                onChange={(e) => setTreatment(e.target.value)} 
-                required 
-                style={{ width: '100%', padding: '12px', boxSizing: 'border-box', border: `1px solid ${theme.border}`, borderRadius: '8px', fontSize: '1rem' }}
-              />
-            </div>
-            <button 
-              type="submit" 
-              style={{ width: '100%', padding: '14px', backgroundColor: theme.primary, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer' }}
-            >
-              Commit File to Blockchain
-            </button>
-          </form>
-        </div>
-
-        {/* 4. View Medical Record Section */}
-        <div style={{ backgroundColor: theme.cardBg, borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ margin: '0 0 20px 0', fontSize: '1.2rem', fontWeight: '600', borderBottom: `2px solid ${theme.background}`, paddingBottom: '10px' }}>🔍 Request Health File (Read Call)</h3>
-          <form onSubmit={handleViewRecord} style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <input 
-              type="number" 
-              placeholder="Enter File Record ID (e.g., 1)" 
-              value={searchId} 
-              onChange={(e) => setSearchId(e.target.value)} 
-              required 
-                          style={{ flex: '1 1 200px', padding: '12px', border: `1px solid ${theme.border}`, borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' }}
-          />
-          <button
-            type="submit"
-            style={{ padding: '12px 24px', backgroundColor: theme.secondary, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', flex: '1 1 auto' }}
-          >
-            Fetch File
-          </button>
-        </form>
-
-        {viewedRecord && (
-          <div style={{ marginTop: '20px', backgroundColor: '#f9fafb', borderRadius: '10px', padding: '20px', border: `1px solid ${theme.border}` }}>
-            <h4 style={{ margin: '0 0 14px 0', color: theme.secondary, fontSize: '1.05rem', fontWeight: '700' }}>📋 Validated Medical Record Output</h4>
-            <div style={{ display: 'grid', gap: '10px', fontSize: '0.95rem' }}>
-              <p style={{ margin: 0 }}><strong>Record Archive ID:</strong> {viewedRecord.id}</p>
-              <p style={{ margin: 0 }}><strong>Diagnosis:</strong> <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '4px', fontWeight: '500' }}>{viewedRecord.diagnosis}</span></p>
-              <p style={{ margin: 0 }}><strong>Treatment Plan:</strong> {viewedRecord.treatment}</p>
-              <p style={{ margin: 0, wordBreak: 'break-all' }}><strong>Signatory Patient:</strong> <span style={{ fontFamily: 'monospace', color: theme.textMuted }}>{viewedRecord.patient}</span></p>
-            </div>
+        {/* RENDER ACTIVE MODULE ONLY */}
+        {activeRole === 'admin' && (
+          <div style={{ backgroundColor: '#fff7ed', borderRadius: '12px', padding: '24px', border: '1px solid #ffedd5' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', fontWeight: '600', color: '#c2410c' }}>👑 Admin Management Control</h3>
+            <form onSubmit={handleAdminRegisterPatient} style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#9a3412', marginBottom: '6px' }}>Register Patient Address</label>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <input type="text" placeholder="Enter patient wallet 0x..." value={adminPatientInput} onChange={(e) => setAdminPatientInput(e.target.value)} required style={{ flex: 1, padding: '10px', border: '1px solid #fed7aa', borderRadius: '8px' }} />
+                <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#ea580c', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Authorize Patient</button>
+              </div>
+            </form>
+            <form onSubmit={handleAdminRegisterDoctor}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#9a3412', marginBottom: '6px' }}>Register Doctor Address</label>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <input type="text" placeholder="Enter doctor wallet 0x..." value={adminDoctorInput} onChange={(e) => setAdminDoctorInput(e.target.value)} required style={{ flex: 1, padding: '10px', border: '1px solid #fed7aa', borderRadius: '8px' }} />
+                <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#ea580c', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Authorize Doctor</button>
+              </div>
+            </form>
           </div>
         )}
-      </div>
 
+        {activeRole === 'patient' && (
+          <div style={{ backgroundColor: '#eff6ff', borderRadius: '12px', padding: '24px', border: '1px solid #bfdbfe' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', fontWeight: '600', color: '#1e40af' }}>👤 Patient Workspace</h3>
+            <form onSubmit={handleAddRecord} style={{ marginBottom: '20px', borderBottom: '1px solid #dbeafe', paddingBottom: '20px' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#1e3a8a', marginBottom: '6px' }}>Diagnosis Report</label>
+                <input type="text" placeholder="e.g., Asthma" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} required style={{ width: '100%', padding: '10px', boxSizing: 'border-box', border: '1px solid #bfdbfe', borderRadius: '8px' }} />
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#1e3a8a', marginBottom: '6px' }}>Treatment Plan</label>
+                <input type="text" placeholder="e.g., Inhaler twice daily" value={treatment} onChange={(e) => setTreatment(e.target.value)} required style={{ width: '100%', padding: '10px', boxSizing: 'border-box', border: '1px solid #bfdbfe', borderRadius: '8px' }} />
+              </div>
+              <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Save Record to Chain</button>
+            </form>
+            <form onSubmit={handleGrantAccess}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#1e3a8a', marginBottom: '6px' }}>Authorize Doctor Access</label>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <input type="text" placeholder="Enter doctor wallet 0x..." value={grantDoctorInput} onChange={(e) => setGrantDoctorInput(e.target.value)} required style={{ flex: 1, padding: '10px', border: '1px solid #bfdbfe', borderRadius: '8px' }} />
+                <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Grant Access</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeRole === 'doctor' && (
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '12px', padding: '24px', border: `1px solid ${theme.border}`, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', fontWeight: '600', color: '#065f46' }}>Submittor Medical File Request</h3>
+            <form onSubmit={handleViewRecord} style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <input type="number" placeholder="Enter Record ID" value={searchId} onChange={(e) => setSearchId(e.target.value)} required style={{ flex: '1 1 200px', padding: '12px', border: `1px solid ${theme.border}`, borderRadius: '8px', boxSizing: 'border-box' }} />
+              <button type="submit" style={{ padding: '12px 24px', backgroundColor: theme.primary, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: '1 1 auto' }}>Fetch File</button>
+            </form>
+            {viewedRecord && (
+              <div style={{ marginTop: '20px', backgroundColor: '#f9fafb', borderRadius: '10px', padding: '20px', border: `1px solid ${theme.border}` }}>
+                <h4 style={{ margin: '0 0 14px 0', color: theme.primary, fontWeight: '700' }}>📋 Validated Medical Record Output</h4>
+                <div style={{ display: 'grid', gap: '10px', fontSize: '0.95rem' }}>
+                  <p style={{ margin: 0 }}><strong>ID:</strong> {viewedRecord.id}</p>
+                  <p style={{ margin: 0 }}><strong>Diagnosis:</strong> <span style={{ background: '#d1fae5', color: '#065f46', padding: '2px 6px', borderRadius: '4px' }}>{viewedRecord.diagnosis}</span></p>
+                  <p style={{ margin: 0 }}><strong>Treatment:</strong> {viewedRecord.treatment}</p>
+                  <p style={{ margin: 0, wordBreak: 'break-all' }}><strong>Patient Address:</strong> <span style={{ fontFamily: 'monospace', color: theme.textMuted }}>{viewedRecord.patient}</span></p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default App;
