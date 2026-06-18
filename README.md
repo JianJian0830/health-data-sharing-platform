@@ -57,26 +57,3 @@ Follow these steps sequentially to launch the smart contract and the front-end d
    npm start
 3. Your browser will automatically launch the interactive portal at http://localhost:3000.
 
----
-
-## Video Demo Walkthrough Path
-
-To demonstrate the full capability of the application to graders, execute the following steps on screen:
-
-### Phase 1: Admin Actions
-1. Connect MetaMask using Account 1 (the funded contract deployer account). The website will auto-detect this address and lock onto the orange Admin Portal.
-2. In MetaMask, copy the address for Account 2. Paste it into the Register Patient box and click Authorize Patient. Confirm the transaction.
-3. In MetaMask, copy the address for Account 3. Paste it into the Register Doctor box and click Authorize Doctor. Confirm the transaction.
-
-### Phase 2: Patient Actions
-1. Open MetaMask and fund Account 2 and Account 3 by sending 5 fake ETH to each from your primary Account 1 (to provide gas money for their transactions).
-2. Switch MetaMask to Account 2.
-3. On the webpage, click the Patient Dashboard tab.
-4. Enter your medical data parameters into the form (e.g., Diagnosis: Flu, Treatment: Sleep more) and click Save Record to Chain. Confirm the transaction in MetaMask.
-5. In the access field below the form, paste the address string for Account 3 (the Doctor) and click Grant Access. Confirm the transaction.
-
-### Phase 3: Doctor Actions
-1. Switch MetaMask to Account 3.
-2. On the webpage, click the green Doctor View tab.
-3. Type the Record ID (0 or 1) into the input box and click Fetch File.
-4. The smart contract will automatically validate permissions, allow the request, and render the secure text data fields on screen.
