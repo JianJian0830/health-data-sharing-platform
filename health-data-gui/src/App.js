@@ -255,7 +255,7 @@ function App() {
 
         {activeRole === 'doctor' && (
           <div style={{ backgroundColor: theme.cardBg, borderRadius: '12px', padding: '24px', border: `1px solid ${theme.border}`, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', fontWeight: '600', color: '#065f46' }}>Submittor Medical File Request</h3>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', fontWeight: '600', color: '#065f46' }}>Submit Medical File Request</h3>
             <form onSubmit={handleViewRecord} style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
               <input type="number" placeholder="Enter Record ID" value={searchId} onChange={(e) => setSearchId(e.target.value)} required style={{ flex: '1 1 200px', padding: '12px', border: `1px solid ${theme.border}`, borderRadius: '8px', boxSizing: 'border-box' }} />
               <button type="submit" style={{ padding: '12px 24px', backgroundColor: theme.primary, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: '1 1 auto' }}>Fetch File</button>
