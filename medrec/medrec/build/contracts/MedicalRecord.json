@@ -12969,8 +12969,8 @@
     "1337": {
       "events": {},
       "links": {},
-      "address": "0xA6c1F45754cD8FF1Cd134927a6488806C617550b",
-      "transactionHash": "0x74c7ba5edca0b6bfdced76fb52168388b82cb7c98df184c352c9f211eb8e5bc1"
+      "address": "0x2fbFE7154BE1BD12061f0079Ac17260Edf261423",
+      "transactionHash": "0xdb9807683d0c187b42a38686a24b79afe40b73cf43318451c023476162801ce2"
     },
     "5777": {
       "events": {},
@@ -12980,7 +12980,7 @@
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2026-06-17T07:59:03.520Z",
+  "updatedAt": "2026-06-19T05:11:42.998Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "An administrator (the contract owner) registers patients and doctors.      Each patient owns their records and decides which registered doctors      are allowed to read them. Doctors can only view a record after the      patient has explicitly granted access. SECURITY: Integer overflow / underflow protection is built in.           This contract targets Solidity ^0.8.x, where all arithmetic           (e.g. recordCounter++) reverts automatically on overflow,           so no SafeMath library is required.",
