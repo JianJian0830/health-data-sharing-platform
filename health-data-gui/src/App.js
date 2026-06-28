@@ -131,6 +131,28 @@ function App() {
     }
   };
 
+    // Patient Function 3: Revoke Doctor Access
+  const handleRevokeAccess = async (e) => {
+    e.preventDefault();
+    if (!account) return setErrorMessage('Please connect wallet.');
+    try {
+      setTxStatus('Revoking Access from Doctor...');
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      // Call the revokeAccess function from the ABI
+      const tx = await contract.revokeAccess(grantDoctorInput);
+      await tx.wait();
+      setTxStatus('Access Revoked Successfully! ❌');
+      setGrantDoctorInput('');
+    } catch (err) {
+      console.error(err);
+      setErrorMessage('Failed to revoke access.');
+    }
+  };
+
+
   const handleViewRecord = async (e) => {
     e.preventDefault();
     if (!account) return setErrorMessage('Please connect wallet.');
@@ -243,13 +265,14 @@ function App() {
               </div>
               <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Save Record to Chain</button>
             </form>
-            <form onSubmit={handleGrantAccess}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#1e3a8a', marginBottom: '6px' }}>Authorize Doctor Access</label>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <input type="text" placeholder="Enter doctor wallet 0x..." value={grantDoctorInput} onChange={(e) => setGrantDoctorInput(e.target.value)} required style={{ flex: 1, padding: '10px', border: '1px solid #bfdbfe', borderRadius: '8px' }} />
-                <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Grant Access</button>
-              </div>
-            </form>
+                      <form onSubmit={handleGrantAccess}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#1e3a8a', marginBottom: '6px' }}>Manage Doctor Access Permissions</label>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <input type="text" placeholder="Enter target doctor wallet 0x..." value={grantDoctorInput} onChange={(e) => setGrantDoctorInput(e.target.value)} required style={{ flex: 1, padding: '10px', border: '1px solid #bfdbfe', borderRadius: '8px', minWidth: '200px' }} />
+              <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Grant Access</button>
+              <button type="button" onClick={handleRevokeAccess} style={{ padding: '10px 20px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Revoke Access</button>
+            </div>
+          </form>
           </div>
         )}
 
