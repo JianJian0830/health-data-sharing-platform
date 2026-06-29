@@ -17,7 +17,7 @@ STEP 2 - In the terminal (inside the medrec folder), run:
 
    Truffle will compile, deploy a fresh copy to Ganache, and run
    all the tests. You should see a list of green ticks and at the
-   bottom something like "36 passing".
+   bottom something like "29 passing".
 
 STEP 3 - Screenshot the terminal showing all tests passing.
    This is your B3 "console output" evidence for the report.
